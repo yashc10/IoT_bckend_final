@@ -19,20 +19,12 @@ app.use(bodyParser.json());
 
 
 app.use('/getlabels', (req, res) => {
-    // labels = [{campus: '', 
-    //             buildingArray: [{buildingName: '', 
-    //                 floorArray: [{floorName: '',
-    //                     zoneArray: [{zoneName: '',
-    //                         sensorArray: []
-    //                         }]}]}]}];
+    //This part stores the suggestions that appear while filling the form to add a sensor.
     labels = [];
 
     Campus_Schema.find((err, campus_objects) => {
         console.log('cmaps objects are ' + JSON.stringify(campus_objects))
         var Labels = [];
-        // var buildingLabels = [];
-        // var floorLabels = [];
-        // var zoneLabels = [];
         var sensorTypeLabels = [];
         for (var campus=0;campus<campus_objects.length;campus++)
         {
@@ -73,18 +65,24 @@ app.use('/getlabels', (req, res) => {
                 }
             }
         }
+        //All labels are pushed at the same hierarchy to reduce computational strain.
         // var labels = {campusLabels: campusLabels, buildingLabels: buildingLabels, floorLabels: floorLabels, zoneLabels: zoneLabels, sensorTypeLabels: sensorTypeLabels}
         
-        console.log('labels array is ' + JSON.stringify(Labels))
+//      console.log('labels array is ' + JSON.stringify(Labels))
         var finalLabels = {locationLabels: Labels, sensorTypeLabels: sensorTypeLabels}//add qual and quant later**************************************
         res.json(finalLabels)
+        //sends the finalLabels object for processing
     })
 
 })
 
 app.use('/storesensor', (req, res) => {
+    // This is the part which allows users to add a new sensor to the database.
     console.log('query: ' + JSON.stringify(req.query));
+    // receives attributes requested by the user as a query
     res.send('request received');
+    //creates a new object of the Campus Schema with all attributes received from query.
+    //only the part of the sensor location which does not already exist will be added.
     var sensorinfo= new Campus_Schema(
         {
             campus: req.query.campus,
@@ -118,7 +116,7 @@ app.use('/storesensor', (req, res) => {
                                         sensorId: req.query.sensorId,
                                         type: req.query.sensorType,
                                         datatype: req.query.sensorDataType
-                                        // longitude: req.query.longi
+                                        // longitude: req.query.longitude
                                         // latitude: {type: String},
                                     }
                                 ]
@@ -136,16 +134,19 @@ app.use('/storesensor', (req, res) => {
         req.query.sensorType);
     sensorinfo.buildingArray[0].floorArray[0].zoneArray[0].sensorTypesAvailable.push(
         req.query.sensorType);
+    // The sensor types available at each level of hierarchy must have at least
+    // the sensor type of the one sensor being added.
 
     Campus_Schema.findOne({campus: req.query.campus}, (err,campusObj) =>
         {
-            if (err || campusObj==null) // no such object
+            if (err || campusObj==null) // If no such object is found in the schema
             {
                 sensorinfo.save(err =>
                     {
                         if (err)
                         {
                             console.log("Error is "+err);
+                            // Logs the error for debugging
                         }
                         else
                         {
@@ -157,8 +158,10 @@ app.use('/storesensor', (req, res) => {
             else
             {
                 console.log(req.query.campus + " campus exists")
+                //Indicates that a new campus object is not being created.
 
                 var buildingObj=null;
+                // Represents the building object with the same building name as that of the query
                 var existsSensorType=false;
                 for (var i=0; i<campusObj.sensorTypesAvailable.length; i++)
                 {
@@ -172,7 +175,10 @@ app.use('/storesensor', (req, res) => {
                 {
                     campusObj.sensorTypesAvailable.push(req.query.sensorType);
                 }
+                // code to check if this is the first sensor of its type in the campus
+                // and add its type if so
                 var bArray = campusObj.buildingArray;
+                // Shortens the notation to represent all buildings under consideration
                 for (var i=0; i<bArray.length; i++)
                 {
                     if (bArray[i].building==req.query.building)
@@ -181,12 +187,14 @@ app.use('/storesensor', (req, res) => {
                     }
                 }
                 if (!buildingObj)
+                // Occurs if no corresponding building is found
                 {
                     bArray.push(sensorinfo.buildingArray[0]);
                 }
                 else //there exists such a building
                 {
                     console.log(req.query.building + " building exists")
+                    // No new building object to be created
                     var floorObj=null;
                     existsSensorType=false;
                     for (var i=0; i<buildingObj.sensorTypesAvailable.length; i++)
@@ -201,6 +209,7 @@ app.use('/storesensor', (req, res) => {
                     {
                         buildingObj.sensorTypesAvailable.push(req.query.sensorType);
                     }
+                    // Add sensor's type to sensorTypesAvailable if it doesn't already exist
                     var fToAdd = sensorinfo.buildingArray[0].floorArray[0];
                     var fArray = buildingObj.floorArray;
                     for (var i=0; i<fArray.length; i++)
@@ -281,6 +290,7 @@ app.use('/storesensor', (req, res) => {
                         }
                     }
                 }
+                //saves the old campus object which has at least one changed attribute
                 campusObj.save(err =>
                     {
                         if (err)
