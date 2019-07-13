@@ -1,0 +1,3 @@
+Sun Jul 07 2019 07:30:16 GMT+0530 (India Standard Time)
+Message: error while saving new hourlyData, sensorId: 11
+Error: {"name":"MongoError"}
