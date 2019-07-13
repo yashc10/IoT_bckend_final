@@ -1,3 +1,5 @@
-Wireless IoT data Analytics
-
-Create an analytic engine which stores real time data from the IoT sensors into a MongoDB database and retrieve it for analysis in the form of Charts, Bar graph and Line charts. Clients are given customisability options through React UI interface.
+Clone this repository and execute following commands
+1. npm install
+2. node server_data_analytics.js (**this server has to run inside anaconda prompt**)
+3. node serve_retrieve_campus_data.js
+4. node server_add_sensor.js
